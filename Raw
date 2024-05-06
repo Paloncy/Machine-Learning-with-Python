@@ -1,0 +1,336 @@
+# HEART DISEASE PREDICTION - KEY INDICATORS OF HEART DISEASE
+
+Dataset URL:
+
+Dataset has been downloaded from Kaggle Dataset Repository.
+https://www.kaggle.com/datasets/kamilpytlak/personal-key-indicators-of-heart-disease 
+
+
+Dataset description:
+This dataset comes orginally from the CDC and was extracted and cleaned by a kaggle user. However all checks have been done personally on the dataset to ascertain the cleaniness of the data.
+
+
+Additional Details:
+Dataset contains 319795 rows and 18 columns recorded 
+
+
+# Libraries
+
+pip install -U imbalanced-learn
+
+# Import necessary libraries
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import plotly.express as px
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from imblearn.under_sampling import RandomUnderSampler
+from imblearn.over_sampling import SMOTE
+from collections import Counter
+
+# The Data
+
+# Load the dataset into a Pandas DataFrame
+data = pd.read_csv("heart_2020_cleaned.csv")
+data.head()
+
+# Show size of the dataset
+data.shape
+
+# Show column names and types of data in dataset
+data.info()
+
+# Show types of datset in columns 
+pd.value_counts(data.dtypes)
+
+# Describe dataset 
+data.describe
+
+Univariate and Multivariate Analysis:
+-------------------------------------
+1. Analysing each Column value count and distribution in space.
+2. Identifying Outliers and null values if any.
+3. Understand the data type and visualise trend.
+4. Understand and interpret the information recorded in each column.
+5. Understand the correlation between features.
+6. Identify features and target variable.
+
+# Checking the percentage of people that have Heart DIsease in the Dataset
+y = data['HeartDisease']
+print(f'Percentage of patient had a Heart Disease: % {round(y.value_counts(normalize=True)[1]*100,2)} --> ({y.value_counts()[1]} patient)\nPercentage of patient did not have a Heart Disease: % {round(y.value_counts(normalize=True)[0]*100,2)} --> ({y.value_counts()[0]} patient)')
+
+# Plot Heart Disease Column
+fig = px.histogram(data, x="HeartDisease", title='HeartDisease', width=400, height=400)
+fig.show()
+
+# Check the percentage of each gender and plot
+print (f'{round(data["Sex"].value_counts(normalize=True)*100,2)}')
+fig = px.histogram(data, x="Sex", title='Gender', width=400, height=400)
+fig.show()
+
+# Check percentage of Smoking
+print (f'{round(data["Smoking"].value_counts(normalize=True)*100,2)}')
+fig = px.histogram(data, x="Smoking", title='Smoking', width=400, height=400)
+fig.show()
+
+# Check unique features in each Age Category
+print (f'{round(data["AgeCategory"].value_counts(normalize=True)*100,2)}')
+fig = px.histogram(data, x="AgeCategory", title='AgeCategory', width=400, height=400)
+fig.update_layout(xaxis={'categoryorder':'total descending'})
+fig.show()
+
+# Plot graph of each Race
+print (f'{round(data["Race"].value_counts(normalize=True)*100,2)}')
+fig = px.histogram(data, x="Race", title='Race', width=400, height=400)
+fig.show()
+
+#check and print numerical columns 
+columns = data.columns
+data[columns].describe()
+
+# univariate analysis of numerical columns
+data[columns].hist(figsize=(8,6));
+
+# check how many people drink the Alcohol or not 
+data['AlcoholDrinking'].value_counts()
+
+#check how many people have KidneyDisease
+data['KidneyDisease'].value_counts()
+
+#check for how many people that have SkinCancer  
+data['SkinCancer'].value_counts()
+
+Observations:
+-------------
+
+    1. Heart Disease - This is the Target Variable which decides if the individual has a heart disease or not
+           Categorical - String
+           Replace Yes with "1", others with "0" 
+                    
+    2. Sex Column - Only Male and Female Genders reflected in the data
+            Categorical - String
+           Replace Male with "1", Female with "0"
+            
+    3. Age Column - Age is represented in range 
+            Categorical - String
+            Calculate mean value for all range values
+            
+    4. Race Column - 6 unique values in race
+              Categorical - String
+            Replace all categories in Race column with numerical values
+            
+    5. BMI Column - Unit in kg/m2
+            Numeric - FLoat Values       
+
+# BIVARIATE ANALYSIS
+
+# Check number of females and males that have heart disease
+fig = px.histogram(data, x="Sex", color="HeartDisease",width=400, height=400)
+fig.show()
+
+# Check number of people in different races that have a heart disease
+fig = px.histogram(data, x="Race", color="HeartDisease",width=400, height=400)
+fig.show()
+
+# Check the numner of people that drink alcohol and have heart disease
+fig = px.histogram(data, x="AlcoholDrinking", color="HeartDisease",width=400, height=400)
+fig.show()
+
+# Check number of people that have stroke and that have heart disease
+fig = px.histogram(data, x="Stroke", color="HeartDisease",width=400, height=400)
+fig.show()
+
+#check for peolple who have KidneyDisease and HeartDisease
+data.groupby(['KidneyDisease','HeartDisease'])['HeartDisease'].count()
+
+# Check for the distribution of data and its skewness
+sns.pairplot(data = data , hue= 'HeartDisease')
+plt.legend('HeartDisease')
+
+# Plot a figure of the whole data to see the empty ones and their location
+plt.figure(figsize=(6, 4))
+plt.imshow(data.isna(), aspect="auto", interpolation="nearest", cmap="gray")
+plt.xlabel("Column Number")
+plt.ylabel("Sample Number");
+
+# CHeck for Null Values
+data.isna().sum()
+
+#check all rows control for null values
+data.isna().values.any()
+
+# converting the values of Diabetic column from categorical to numerical
+def diabetic(Diabetic):      
+    if Diabetic == 'Yes':
+        return "1"
+    else:
+        return '0'
+    
+data['Diabetic'] = data['Diabetic'].apply(diabetic)
+
+
+# This method converts categorical Race to numeric values, encoding the Races with whole numbers
+def race(Race):
+
+    if Race == 'White':
+        return "1"
+    elif Race == 'Black':
+        return "2"
+    elif Race == 'Asian':
+        return "3"
+    elif Race == 'American Indian/Alaskan Native':
+        return "4"
+    elif Race == 'Hispanic':
+        return "5"
+    elif Race == 'Other':
+        return "6"
+    else:
+        return '0'
+
+data['Race'] = data['Race'].apply(race)
+
+# Convert other coulmns to binary
+data['Smoking'] = data['Smoking'].map({'Yes':1, 'No':0})
+data['AlcoholDrinking'] = data['AlcoholDrinking'].map({'Yes':1, 'No':0})
+data['GenHealth'] = data['GenHealth'].map({'Excellent':1, 'Very good':2, 'Good':3, 'Fair':4, 'Poor':5})
+data['Stroke'] = data['Stroke'].map({'Yes':1, 'No':0})
+data['DiffWalking'] = data['DiffWalking'].map({'Yes':1, 'No':0})
+data['Sex'] = data['Sex'].map({'Male':1, 'Female':0})
+data['PhysicalActivity'] = data['PhysicalActivity'].map({'Yes':1, 'No':0})
+data['Asthma'] = data['Asthma'].map({'Yes':1, 'No':0})
+data['KidneyDisease'] = data['KidneyDisease'].map({'Yes':1, 'No':0})
+data['SkinCancer'] = data['SkinCancer'].map({'Yes':1, 'No':0})
+data['AgeCategory'] = data['AgeCategory'].map({'55-59':55, '80 or older':80, '65-69':65, '75-79':75, '40-44':40, '70-74':70,
+       '60-64':60, '50-54':50, '45-49':45, '18-24':18, '35-39':35, '30-34':30, '25-29':25})
+
+# Convert HeartDisease Column to Binary and change title of column to Outcome
+
+data['HeartDisease'] = data['HeartDisease'].map({'Yes':1, 'No':0})
+data = data.rename(columns={"HeartDisease":"Outcome"})
+data1 = data.pop('Outcome')
+data['Outcome']=data1
+
+# Print first ten rows
+data.head(10)
+
+# Check columns that have significant positive correlation to the outcome 
+data.corr()
+
+# check mean of all colums with the Target Value
+data.groupby('Outcome').mean()
+
+# split data into X nd y
+X = data.drop(['Outcome'], axis=1)
+y = data['Outcome']
+
+# Standardization of all numerical values
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Run Principal Componenrt Analysis
+pca = PCA(n_components=2)
+pca.fit(X_scaled)
+
+# Print PCA Explained Variance Ratio
+X_pca = pca.transform(X_scaled)
+print("Explained Variance Ratio:", pca.explained_variance_ratio_)
+
+# Plot the transformed data
+plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y)
+plt.xlabel('PC1')
+plt.ylabel('PC2')
+plt.show()
+
+# Display PCA Components
+pca.components_
+
+# drop the PhysicalActivity and Sleeptime columns as they do not have significant positive correlation to the outcome 
+data = data.drop(['PhysicalActivity', 'AlcoholDrinking'], axis=1)
+
+# Print data again to see final look
+data.head()
+
+# Check count of the Target column to see if it's balanced or imbalanced
+y.value_counts()
+
+# balance the dataset using SMOTE (Synthetic Minority Oversampling Technique)
+smote = SMOTE(sampling_strategy='minority')
+X_pca,y = smote.fit_resample(X_scaled,y)
+X_train, X_test, y_train, y_test = train_test_split(X_pca, y, test_size=0.2, random_state=42)
+
+print('Original: {}'.format(Counter(y))) 
+print('   SMOTE: {}'.format(Counter(y_train))) 
+
+# Train the logistic regression model
+model = LogisticRegression(solver='liblinear', random_state=42)
+
+# Train the model on the training data
+model.fit(X_train,y_train)
+
+# Make logistic regression predictions on the testing data
+y_pred_log = model.predict(X_test)
+
+# Calculate the confusion matrix and print
+cm = confusion_matrix(y_test, y_pred_log)
+print(cm)
+
+# Evaluate the accuracy of the logistic regression algorithm
+accuracy = (accuracy_score(y_test, y_pred_log))
+print("Logistic Regression Accuracy:", accuracy)
+
+# train a Gaussian Naive Bayes classifier on the resampled data
+nb = GaussianNB()
+nb.fit(X_train, y_train)
+
+# make predictions on the test set using the Naive Bayes classifier
+y_pred_nb = nb.predict(X_test)
+
+# evaluate the performance of the Naive Bayes classifier
+accuracy_nb = accuracy_score(y_test, y_pred_nb)
+print('Naive Bayes Accuracy:', accuracy_nb)
+
+# train a Random Forest classifier on the resampled data
+rf = RandomForestClassifier(random_state=42)
+rf.fit(X_train, y_train)
+
+# make predictions on the test set using the Random Forest classifier
+y_pred_rf = rf.predict(X_test)
+
+# evaluate the performance of the Random Forest classifier
+accuracy_rf = accuracy_score(y_test, y_pred_rf)
+print('Random Forest Accuracy:', accuracy_rf)
+
+# Create the classifier object and fit algorithm
+clf = DecisionTreeClassifier(random_state=42)
+clf.fit(X_train, y_train)
+
+# Fit the model on the training data
+y_pred_clf = clf.predict(X_test)
+
+# Calculate the accuracy of the DecisionTreeClassifier
+accuracy_clf = accuracy_score(y_test, y_pred_clf)
+print(f"Accuracy: {accuracy_clf}")
+
+#Evaluate the classification report
+print("Logistic Regression")
+print(classification_report(y_test, y_pred_log))
+
+print("Naive Bayes Classifier")
+print(classification_report(y_test, y_pred_nb))
+
+print("Random Forest CLassifier")
+print(classification_report(y_test, y_pred_rf))
+
+print("Decision Tree Classifier")
+print(classification_report(y_test, y_pred_clf))
+
