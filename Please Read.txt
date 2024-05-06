@@ -1,0 +1,9 @@
+C2257509 - Emmanuel Obinna Eze-Ukauwa
+
+Note:
+To run the code please follow these steps:
+1. Please run "pip install -U imbalanced-learn" on the Anaconda Command Prompt 
+2. Restart Kernel on the Jupyter Notebook
+3. Run all cells
+
+Thanks!
